@@ -1,15 +1,21 @@
-include(FetchContent)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick)
 
-FetchContent_Declare(
-  fmt
-  GIT_REPOSITORY https://github.com/fmtlib/fmt
-  GIT_TAG        e69e5f977d458f2650bb346dadf2ad30c5320281) # 10.2.1
-FetchContent_MakeAvailable(fmt)
+qt_standard_project_setup(REQUIRES 6.5)
 
-add_executable(${PROJECT_NAME}
+qt_add_executable(${PROJECT_NAME}
   main.cpp
 )
 
+qt_add_qml_module(${PROJECT_NAME}
+  URI ${PROJECT_NAME}
+  VERSION 1.0
+  QML_FILES
+    Main.qml
+)
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
-  fmt::fmt
+  Qt6::Core
+  Qt6::Gui
+  Qt6::Qml
+  Qt6::Quick
 )

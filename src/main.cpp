@@ -1,6 +1,11 @@
-#include <fmt/core.h>
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
 
 int main(int argc, char *argv[]) {
-  fmt::print("Hello, world!\n");
-  return 0;
+    QGuiApplication app(argc, argv);
+
+    QQmlApplicationEngine engine;
+    engine.loadFromModule("QtQuickPlayground", "Main");
+
+    return QGuiApplication::exec();
 }
