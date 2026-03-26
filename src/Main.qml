@@ -7,7 +7,7 @@ ApplicationWindow {
     height: 480
     title: "QtQuick Playground"
 
-    Text {
+    Label {
         anchors.centerIn: parent
         text: "Hello, QtQuick!"
         font.pixelSize: 32
