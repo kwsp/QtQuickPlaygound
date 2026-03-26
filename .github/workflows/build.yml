@@ -15,17 +15,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build clang
 
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.*'
+          host: linux
+          target: desktop
+          arch: linux_gcc_64
+
       - name: CMake configure
         run: cmake --preset clang
 
       - name: CMake build
-        run: cmake --build build/clang --config Release
+        run: cmake --build build-clang --config Release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: artifact-linux
-          path: ${{ github.workspace }}/build/clang/src/Release/CppTemplate
+          path: ${{ github.workspace }}/build-clang/src/Release/QtQuickPlayground
           if-no-files-found: warn
           overwrite: true
 
@@ -37,17 +45,25 @@ jobs:
       - name: Install build tools
         run: brew install ninja
 
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.*'
+          host: mac
+          target: desktop
+          arch: clang_64
+
       - name: CMake configure
         run: cmake --preset clang
 
       - name: CMake build
-        run: cmake --build build/clang --config Release
+        run: cmake --build build-clang --config Release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: artifact-macos
-          path: ${{ github.workspace }}/build/clang/src/Release/CppTemplate
+          path: ${{ github.workspace }}/build-clang/src/Release/QtQuickPlayground
           if-no-files-found: warn
           overwrite: true
 
@@ -58,6 +74,14 @@ jobs:
         shell: pwsh
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.*'
+          host: windows
+          target: desktop
+          arch: win64_msvc2019_64
 
       - name: Setup MSVC environment
         run: |
@@ -71,12 +95,12 @@ jobs:
         run: cmake --preset cl
 
       - name: CMake build
-        run: cmake --build build/cl --config Release
+        run: cmake --build build-cl --config Release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: artifact-windows
-          path: ${{ github.workspace }}/build/cl/src/Release/CppTemplate.exe
+          path: ${{ github.workspace }}/build-cl/src/Release/QtQuickPlayground.exe
           if-no-files-found: warn
           overwrite: true
