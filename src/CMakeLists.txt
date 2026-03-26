@@ -6,6 +6,10 @@ qt_add_executable(${PROJECT_NAME}
   main.cpp
 )
 
+set_target_properties(${PROJECT_NAME} PROPERTIES
+  MACOSX_BUNDLE TRUE
+)
+
 qt_add_qml_module(${PROJECT_NAME}
   URI ${PROJECT_NAME}
   VERSION 1.0
