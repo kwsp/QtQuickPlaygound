@@ -40,7 +40,44 @@ else()
   message(WARNING "qmake not found. .qmlls.ini will not be generated, which may affect QML language features in some IDEs.")
 endif()
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
-  MACOSX_BUNDLE TRUE
-  WIN32_EXECUTABLE TRUE
-)
+# App Bundle
+if (win32)
+  # https://doc.qt.io/qt-6/windows-deployment.html
+  set_target_properties(${PROJECT_NAME} PROPERTIES
+    WIN32_EXECUTABLE TRUE
+  )
+  # Determine the path to windeployqt
+  set(WINDEPLOYQT_PATH "${Qt6_DIR}/../../tools/Qt6/bin")
+  set(WINDEPLOYQT_EXE "${WINDEPLOYQT_PATH}/windeployqt.exe")
+  set(WINDEPLOYQT_DEBUG_EXE "${WINDEPLOYQT_PATH}/windeployqt.debug.bat")
+
+  # Add post build command to call windeployqt
+  add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+      COMMAND "$<IF:$<CONFIG:Debug>,${WINDEPLOYQT_DEBUG_EXE},${WINDEPLOYQT_EXE}>"
+      --verbose 1
+      "$<TARGET_FILE:${PROJECT_NAME}>"
+  )
+
+elseif(APPLE)
+  # https://doc.qt.io/qt-6/macos-deployment.html
+  set_target_properties(${PROJECT_NAME} PROPERTIES
+    MACOSX_BUNDLE TRUE
+  )
+
+  # Find macdeployqt
+  get_target_property(QT_BIN_DIR Qt::qmake IMPORTED_LOCATION)
+  find_program(MACDEPLOYQT NAMES macdeployqt HINTS "${QT_BIN_DIR}")
+
+  # Use macdeployqt to bundle Qt libraries
+  add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+      COMMAND ${MACDEPLOYQT}
+      "$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>"
+      -verbose=1
+      -always-overwrite
+      -codesign=-
+      -no-strip
+      "$<IF:$<CONFIG:Release>,-dmg,-use-debug-libs>"
+      COMMENT "Bundling Qt libraries"
+  )
+
+endif()
