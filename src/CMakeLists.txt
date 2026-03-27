@@ -41,7 +41,7 @@ else()
 endif()
 
 # App Bundle
-if (win32)
+if (WIN32)
   # https://doc.qt.io/qt-6/windows-deployment.html
   set_target_properties(${PROJECT_NAME} PROPERTIES
     WIN32_EXECUTABLE TRUE
