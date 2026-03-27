@@ -54,6 +54,7 @@ if (win32)
   # Add post build command to call windeployqt
   add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
       COMMAND "$<IF:$<CONFIG:Debug>,${WINDEPLOYQT_DEBUG_EXE},${WINDEPLOYQT_EXE}>"
+      --qmldir ${CMAKE_CURRENT_SOURCE_DIR}
       --verbose 1
       "$<TARGET_FILE:${PROJECT_NAME}>"
   )
@@ -72,6 +73,7 @@ elseif(APPLE)
   add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
       COMMAND ${MACDEPLOYQT}
       "$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>"
+      -qmldir=${CMAKE_CURRENT_SOURCE_DIR}
       -verbose=1
       -always-overwrite
       -codesign=-
