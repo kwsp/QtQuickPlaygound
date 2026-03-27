@@ -46,14 +46,12 @@ if (WIN32)
   set_target_properties(${PROJECT_NAME} PROPERTIES
     WIN32_EXECUTABLE TRUE
   )
-  # Determine the path to windeployqt
-  set(WINDEPLOYQT_PATH "${Qt6_DIR}/../../tools/Qt6/bin")
-  set(WINDEPLOYQT_EXE "${WINDEPLOYQT_PATH}/windeployqt.exe")
-  set(WINDEPLOYQT_DEBUG_EXE "${WINDEPLOYQT_PATH}/windeployqt.debug.bat")
+  find_program(WINDEPLOYQT NAMES windeployqt6 windeployqt HINTS "${Qt6_DIR}/../../../bin" REQUIRED)
 
   # Add post build command to call windeployqt
   add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-      COMMAND "$<IF:$<CONFIG:Debug>,${WINDEPLOYQT_DEBUG_EXE},${WINDEPLOYQT_EXE}>"
+      COMMAND ${WINDEPLOYQT}
+      "$<IF:$<CONFIG:Debug>,--debug,--release>"
       --qmldir ${CMAKE_CURRENT_SOURCE_DIR}
       --verbose 1
       "$<TARGET_FILE:${PROJECT_NAME}>"
