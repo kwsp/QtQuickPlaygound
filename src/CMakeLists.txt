@@ -10,9 +10,11 @@ qt_add_qml_module(${PROJECT_NAME}
   QML_FILES
     Main.qml
 )
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-  "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>"
-)
+
+# This is only needed to debug QML in Qt Creator.
+# target_compile_definitions(${PROJECT_NAME} PRIVATE
+#   "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>"
+# )
 
 configure_file(config.h.in config.h)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
@@ -43,9 +45,7 @@ endif()
 # App Bundle
 if (WIN32)
   # https://doc.qt.io/qt-6/windows-deployment.html
-  set_target_properties(${PROJECT_NAME} PROPERTIES
-    WIN32_EXECUTABLE TRUE
-  )
+  set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
   find_program(WINDEPLOYQT NAMES windeployqt6 windeployqt HINTS "${Qt6_DIR}/../../../bin" REQUIRED)
 
   # Add post build command to call windeployqt
@@ -59,25 +59,46 @@ if (WIN32)
 
 elseif(APPLE)
   # https://doc.qt.io/qt-6/macos-deployment.html
+  # Derive Qt's lib directory from Qt6_DIR (e.g. /opt/homebrew/lib/cmake/Qt6 -> /opt/homebrew/lib)
+  cmake_path(GET Qt6_DIR PARENT_PATH _qt_cmake_dir)
+  cmake_path(GET _qt_cmake_dir PARENT_PATH _qt_lib_dir)
+
   set_target_properties(${PROJECT_NAME} PROPERTIES
     MACOSX_BUNDLE TRUE
+    MACOSX_BUNDLE_INFO_PLIST cmake/MacOSXBundleInfo.plist.in
+    BUILD_RPATH "${_qt_lib_dir}"
   )
+
+  # For Debug builds, generate qt.conf so the app can find platform plugins.
+  # macdeployqt handles this for Release builds.
+  if(_qmake)
+    execute_process(
+      COMMAND "${_qmake}" -query QT_INSTALL_PLUGINS
+      OUTPUT_VARIABLE _qt_plugins_dir
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    file(GENERATE
+      OUTPUT "$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>/Contents/Resources/qt.conf"
+      CONTENT "[Paths]\nPlugins = ${_qt_plugins_dir}\nQml2Imports = ${_qt_qml_dir}\n"
+      CONDITION "$<NOT:$<CONFIG:Release>>"
+    )
+  endif()
 
   # Find macdeployqt
   get_target_property(QT_BIN_DIR Qt::qmake IMPORTED_LOCATION)
   find_program(MACDEPLOYQT NAMES macdeployqt HINTS "${QT_BIN_DIR}")
 
-  # Use macdeployqt to bundle Qt libraries
+  # Use macdeployqt to bundle Qt libraries (Release only)
+  # Skip debug because Homebrew's Qt doesn't ship debug libraries.
   add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-      COMMAND ${MACDEPLOYQT}
-      "$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>"
-      -qmldir=${CMAKE_CURRENT_SOURCE_DIR}
-      -verbose=1
-      -always-overwrite
-      -codesign=-
-      -no-strip
-      "$<IF:$<CONFIG:Release>,-dmg,-use-debug-libs>"
+      COMMAND ${CMAKE_COMMAND}
+          -DMACDEPLOYQT:FILEPATH=${MACDEPLOYQT}
+          -DBUNDLE_DIR:PATH=$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>
+          -DQMLDIR:PATH=${CMAKE_CURRENT_SOURCE_DIR}
+          -DCONFIG:STRING=$<CONFIG>
+          -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/RunMacDeployQt.cmake
       COMMENT "Bundling Qt libraries"
+      VERBATIM
   )
 
 endif()
