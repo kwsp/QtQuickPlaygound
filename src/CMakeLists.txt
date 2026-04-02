@@ -69,35 +69,30 @@ elseif(APPLE)
     BUILD_RPATH "${_qt_lib_dir}"
   )
 
-  # For Debug builds, generate qt.conf so the app can find platform plugins.
-  # macdeployqt handles this for Release builds.
+  # Find macdeployqt and Qt paths for deployment
+  get_target_property(QT_BIN_DIR Qt::qmake IMPORTED_LOCATION)
+  find_program(MACDEPLOYQT NAMES macdeployqt HINTS "${QT_BIN_DIR}")
+
   if(_qmake)
     execute_process(
       COMMAND "${_qmake}" -query QT_INSTALL_PLUGINS
       OUTPUT_VARIABLE _qt_plugins_dir
       OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-    file(GENERATE
-      OUTPUT "$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>/Contents/Resources/qt.conf"
-      CONTENT "[Paths]\nPlugins = ${_qt_plugins_dir}\nQml2Imports = ${_qt_qml_dir}\n"
-      CONDITION "$<NOT:$<CONFIG:Release>>"
-    )
   endif()
 
-  # Find macdeployqt
-  get_target_property(QT_BIN_DIR Qt::qmake IMPORTED_LOCATION)
-  find_program(MACDEPLOYQT NAMES macdeployqt HINTS "${QT_BIN_DIR}")
-
-  # Use macdeployqt to bundle Qt libraries (Release only)
-  # Skip debug because Homebrew's Qt doesn't ship debug libraries.
+  # Release: run macdeployqt to bundle Qt libraries into the .app and create a .dmg
+  # Non-Release: write a qt.conf pointing to the system Qt so the app finds plugins/QML
   add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
       COMMAND ${CMAKE_COMMAND}
           -DMACDEPLOYQT:FILEPATH=${MACDEPLOYQT}
           -DBUNDLE_DIR:PATH=$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>
           -DQMLDIR:PATH=${CMAKE_CURRENT_SOURCE_DIR}
+          -DQT_PLUGINS_DIR:PATH=${_qt_plugins_dir}
+          -DQT_QML_DIR:PATH=${_qt_qml_dir}
           -DCONFIG:STRING=$<CONFIG>
           -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/RunMacDeployQt.cmake
-      COMMENT "Bundling Qt libraries"
+      COMMENT "Deploying Qt libraries"
       VERBATIM
   )
 
